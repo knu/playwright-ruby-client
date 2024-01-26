@@ -232,4 +232,66 @@ RSpec.describe 'locator' do
       end
     end
   end
+
+  example_group 'wait' do
+    let(:append_list_item) {
+      <<~JAVASCRIPT
+        (ul) => {
+          const li = document.createElement('li');
+          li.textContent = `Item ${ul.children.length + 1}`;
+          ul.appendChild(li);
+        }
+      JAVASCRIPT
+    }
+
+    it 'should wait for one element by default' do
+      with_page do |page|
+        page.content = '<ul></ul>'
+        locator = page.locator('ul li')
+        promise = Concurrent::Promises.future {
+          locator.wait(timeout: 100)
+        }
+        page.eval_on_selector('ul', append_list_item)
+        expect(promise.value!).to eq locator
+        expect(locator.count).to eq 1
+      end
+    end
+
+    it 'should wait for one element by default and time out when not satisfied' do
+      with_page do |page|
+        page.content = '<ul></ul>'
+        locator = page.locator('ul li')
+        expect {
+          locator.wait(timeout: 1)
+        }.to raise_error(Playwright::TimeoutError)
+        expect(locator.count).to eq 0
+      end
+    end
+
+    it 'should wait for a given number of elements' do
+      with_page do |page|
+        page.content = '<ul></ul>'
+        locator = page.locator('ul li')
+        page.eval_on_selector('ul', append_list_item)
+        promise = Concurrent::Promises.future {
+          locator.wait(count: 2, timeout: 100)
+        }
+        page.eval_on_selector('ul', append_list_item)
+        expect(promise.value!).to eq locator
+        expect(locator.count).to eq 2
+      end
+    end
+
+    it 'should wait for a given number of elements and time out when not satisfied' do
+      with_page do |page|
+        page.content = '<ul></ul>'
+        locator = page.locator('ul li')
+        page.eval_on_selector('ul', append_list_item)
+        expect {
+          locator.wait(count: 2, timeout: 1)
+        }.to raise_error(Playwright::TimeoutError)
+        expect(locator.count).to eq 1
+      end
+    end
+  end
 end
