@@ -85,6 +85,10 @@ class PlaywrightApiRenderer
         end
         data << '  end'
         data << 'end'
+        if File.exist?(File.join('.', 'lib', 'playwright', "#{@class_with_doc.filename}.rb"))
+          data << ''
+          data << "require_relative '../playwright/#{@class_with_doc.filename}'"
+        end
       end
     end
 
